@@ -1,3 +1,5 @@
+{
+    
 /*--Main-------------------------------------------------------------------------------------------------------------------------------------------*/
 window.oncontextmenu = (e)=>{e.preventDefault()}
 window.onresize = resize;
@@ -1097,4 +1099,6 @@ function evaluateBoard(){
         }
     }
     return [whiteWeight,blackWeight];
+}
+    
 }
