@@ -3,15 +3,28 @@
     <head>
         <title>Chess</title>
         <meta charset="UTF-8">
+        <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+        <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
         <link rel="stylesheet" type="text/css" href="index.css">
+        <script type="text/javascript" src="./index.js"></script>
     </head>
     <body>
-        <canvas id="gameCanvas"></canvas>
-        <div class="gameOverMask">
-            <div class="gameOverWindow">
-                <div class="gameOverBody"></div>
+        <canvas id="game-canvas"></canvas>
+        <div class="computer-mask"></div>
+        <div class="game-mode">
+            <div class="game-mode-text">Click to change</div>
+            <div class="button" id="change-mode">Singleplayer</div>
+            <div class="difficulty">
+                <div class="game-mode-text">Choose Diffciulty</div>
+                <div id="diff-e" class="button diff-button selected">Easy</div>
+                <div id="diff-m" class="button diff-button">Medium</div>
+                <div id="diff-h" class="button diff-button">Hard</div>
             </div>
         </div>
-        <script type="text/javascript" src="index.js"></script>
+        <div class="game-over-mask">
+            <div class="game-over-window">
+                <div class="game-over-body"></div>
+            </div>
+        </div>
     </body>
 </html>

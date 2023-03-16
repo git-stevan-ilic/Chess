@@ -1,16 +1,7 @@
-/*--Animations-------------------------------------------------------------------------------------------------------------------------------------*/
-@keyframes fadeIn{
-    from {opacity:0;}
-    to {opacity:1;}
-}
-@-webkit-keyframes fadeIn{
-    from {opacity:0;}
-    to {opacity:1;}
-}
-
 /*--Elements---------------------------------------------------------------------------------------------------------------------------------------*/
 body{
     background-image:radial-gradient(circle,rgb(100,50,0),rgb(90,40,0));
+    transition:ease-in-out 0.2s;
     color:rgb(255,220,180);
     font-family:"Arial";
     font-weight:bold;
@@ -20,20 +11,27 @@ body{
 }
 canvas{
     box-shadow:0px 0px 10px rgba(0,0,0,0.3);
-    border:1vh solid rgb(30,15,0);
+    border:min(1vh,2vw) solid rgb(30,15,0);
     background-color:rgb(80,40,0);
     transform:translate(-50%,-50%);
-    border-radius:2vh;
+    border-radius:min(2vh,4vw);
     position:absolute;
+    left:50%;
+    top:50%;
+}
+.computer-mask{
+    border:min(1vh,2vw) solid rgb(30,15,0);
+    transform:translate(-50%,-50%);
+    border-radius:min(2vh,4vw);
+    position:absolute;
+    display:none;
     left:50%;
     top:50%;
 }
 
 /*--Game Over--------------------------------------------------------------------------------------------------------------------------------------*/
-.gameOverMask{
-    -webkit-animation:"fadeIn" linear 0.2s;
+.game-over-mask{
     background-color:rgba(0,0,0,0.3);
-    animation:"fadeIn" linear 0.2s;
     position:absolute;
     display:none;
     height:100%;
@@ -41,19 +39,19 @@ canvas{
     left:0px;
     top:0px;
 }
-.gameOverWindow{
+.game-over-window{
     box-shadow:0px 0px 10px rgba(0,0,0,0.3);
-    border:1vh solid rgb(30,15,0);
+    border:min(1vh,2vw) solid rgb(30,15,0);
     background-color:rgb(80,40,0);
     transform:translate(-50%,-50%);
+    border-radius:min(2vh,4vw);
     height:min(20vh,40vw);
     width:min(40vh,80vw);
-    border-radius:2vh;
     position:absolute;
     left:50%;
     top:50%;
 }
-.gameOverBody{
+.game-over-body{
     font-size:min(5vh,10vw);
     justify-content:center;
     align-items:center;
@@ -63,4 +61,56 @@ canvas{
     width:90%;
     left:5%;
     top:5%;
+}
+
+/*--Game Mode--------------------------------------------------------------------------------------------------------------------------------------*/
+.game-mode{
+    background-image:radial-gradient(circle,rgb(100,50,0),rgb(90,40,0));
+    border-bottom:min(0.5vh,1vw) solid rgb(30,15,0);
+    border-right:min(0.5vh,1vw) solid rgb(30,15,0);
+    box-shadow:0px 0px 10px rgba(0,0,0,0.3);
+    border-bottom-right-radius:min(1vh,2vw);
+    padding:min(1vh,2vw);
+    top:max(-2vh,-4vw);
+    position:absolute;
+    left:0px;
+}
+.game-mode-text{
+    padding-bottom:min(0.5vh,1vw);
+    font-size:min(1.8vh,3.6vw);
+    padding-top:min(2vh,4vw);
+}
+.difficulty{
+    display:block;
+}
+
+/*--Buttons----------------------------------------------------------------------------------------------------------------------------------------*/
+.button{
+    border:min(0.5vh,1vw) solid rgb(30,15,0);
+    box-shadow:0px 0px 10px rgba(0,0,0,0.3);
+    background-color:rgb(70,30,0);
+    border-radius:min(1vh,2vw);
+    transform:translateY(0px);
+    width:min(20vh,40vw);
+    height:min(4vh,8vw);
+    cursor:pointer;
+
+    font-size:min(2vh,4vw);
+    justify-content:center;
+    align-items:center;
+    display:flex;
+}
+.button:hover{
+    transform:translateY(-1px);
+}
+.button:active{
+    transform:translateY(1px);
+}
+
+.diff-button{
+    margin-bottom:min(0.5vh,1vw);
+}
+.selected{
+    background-color:rgb(255,220,180);
+    color:rgb(70,30,0);
 }

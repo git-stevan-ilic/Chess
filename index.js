@@ -1,3 +1,5 @@
+{
+
 /*--Main-------------------------------------------------------------------------------------------------------------------------------------------*/
 window.oncontextmenu = (e)=>{e.preventDefault()}
 window.onresize = resize;
@@ -6,6 +8,70 @@ window.onload = initLoad;
 let game = {};
 function initLoad(){
     loadImages();
+    resetBoard();
+    resize();
+
+    game.mode = 1;
+    game.difficulty = 0;
+
+    document.querySelector("#game-canvas").onclick = gameClick;
+    document.querySelector("#change-mode").onclick = changeGameMode;
+    document.querySelector("#diff-e").onclick = ()=>{changeDifficulty(0)}
+    document.querySelector("#diff-m").onclick = ()=>{changeDifficulty(1)}
+    document.querySelector("#diff-h").onclick = ()=>{changeDifficulty(2)}
+}
+function resize(){
+    let computerMask = document.querySelector(".computer-mask");
+    let gameCanvas = document.querySelector("#game-canvas");
+    if(window.innerHeight < window.innerWidth){
+        let startSize = Math.floor(window.innerHeight*0.95);
+        let endSize = startSize - startSize % 8;
+        gameCanvas.height = endSize;
+        gameCanvas.width = endSize;
+        computerMask.style.height = endSize+"px";
+        computerMask.style.width = endSize+"px";
+    }
+    else{
+        let startSize = Math.floor(window.innerWidth*0.95);
+        let endSize = startSize - startSize % 8;
+        gameCanvas.height = endSize;
+        gameCanvas.width = endSize;
+        computerMask.style.height = endSize+"px";
+        computerMask.style.width = endSize+"px";
+    }
+    game.size = gameCanvas.height/8;
+    drawBoard();
+}
+function changeGameMode(){
+    let button = document.querySelector("#change-mode");
+    let difficulty = document.querySelector(".difficulty");
+    if(game.mode === 0){
+        difficulty.style.display = "block";
+        button.innerHTML = "Singleplayer";
+        game.mode = 1;
+    }
+    else{
+        difficulty.style.display = "none";
+        button.innerHTML = "Multiplayer";
+        game.mode = 0;
+    }
+    resetBoard();
+}
+function changeDifficulty(diff){
+    if(game.difficulty != diff){
+        game.difficulty = diff;
+        let prevSelected = document.querySelector(".selected");
+        prevSelected.className = "button diff-button";
+        switch(diff){
+            default:break;
+            case 0:document.querySelector("#diff-e").className = "button diff-button selected";break;
+            case 1:document.querySelector("#diff-m").className = "button diff-button selected";break;
+            case 2:document.querySelector("#diff-h").className = "button diff-button selected";break;
+        }
+        resetBoard();
+    }
+}
+function resetBoard(){
     game.turn = 0;
     game.enPassant = [];
     game.boardMarks = [];
@@ -46,24 +112,6 @@ function initLoad(){
             }
         }
     }
-    resize();
-    document.querySelector("#gameCanvas").onclick = gameClick;
-}
-function resize(){
-    let gameCanvas = document.querySelector("#gameCanvas");
-    if(window.innerHeight < window.innerWidth){
-        let startSize = Math.floor(window.innerHeight*0.95);
-        let endSize = startSize - startSize % 8;
-        gameCanvas.height = endSize;
-        gameCanvas.width = endSize;
-    }
-    else{
-        let startSize = Math.floor(window.innerWidth*0.95);
-        let endSize = startSize - startSize % 8;
-        gameCanvas.height = endSize;
-        gameCanvas.width = endSize;
-    }
-    game.size = gameCanvas.height/8;
     drawBoard();
 }
 
@@ -88,7 +136,7 @@ function loadImages(){
     rookB.onload = ()=>{setTimeout(()=>{drawBoard()},100)}
 }
 function drawBoard(){
-    let gameCanvas = document.querySelector("#gameCanvas");
+    let gameCanvas = document.querySelector("#game-canvas");
     let ctx = gameCanvas.getContext("2d");
 
     for(let j = 0; j < 8; j++){
@@ -179,9 +227,12 @@ function drawCheck(ctx){
 }
 
 /*--Game Logic-------------------------------------------------------------------------------------------------------------------------------------*/
-function gameClick(e){
+function gameClick(e,givenX,givenY,compInit){
     let x = Math.floor(e.offsetX/game.size);
     let y = Math.floor(e.offsetY/game.size);
+    if(givenX != undefined) x = givenX;
+    if(givenY != undefined) y = givenY;
+
     if(!game.selectedPiece){
         let currPiece = game.boardPiece[x][y];
         if(currPiece && currPiece.turn === game.turn){
@@ -263,10 +314,11 @@ function gameClick(e){
                 else game.turn = 0;
                 demarkBoard();
                 checkForGameOver();
+                if(game.mode === 1 && !compInit) computerTurn();
             }        
         }
     }
-    drawBoard();
+    if(!compInit) drawBoard();
 }
 function demarkBoard(){
     game.selectedCoords = [];
@@ -281,12 +333,12 @@ function markBoard(i,j,type){
     game.boardMarks[i][j] = 1;
     switch(type){
         default:break;
-        case 0:pawnLogic(i,j,false);break;
-        case 1:rookLogic(i,j,false);break;
-        case 2:knightLogic(i,j,false);break;
-        case 3:bishopLogic(i,j,false);break;
-        case 4:queenLogic(i,j,false);break;
-        case 5:kingLogic(i,j,false);break;
+        case 0:pawnLogic(i,j,false,false);break;
+        case 1:rookLogic(i,j,false,false);break;
+        case 2:knightLogic(i,j,false,false);break;
+        case 3:bishopLogic(i,j,false,false);break;
+        case 4:queenLogic(i,j,false,false);break;
+        case 5:kingLogic(i,j,false,false);break;
     }
 }
 function checkForCheck(i,j){
@@ -449,12 +501,12 @@ function checkForGameOver(){
                 game.selectedCoords = [i,j];
                 switch(game.boardPiece[i][j].type){
                     default:break;
-                    case 0:pawnLogic(i,j,true);break;
-                    case 1:rookLogic(i,j,true);break;
-                    case 2:knightLogic(i,j,true);break;
-                    case 3:bishopLogic(i,j,true);break;
-                    case 4:queenLogic(i,j,true);break;
-                    case 5:kingLogic(i,j,true);break;
+                    case 0:pawnLogic(i,j,true,false);break;
+                    case 1:rookLogic(i,j,true,false);break;
+                    case 2:knightLogic(i,j,true,false);break;
+                    case 3:bishopLogic(i,j,true,false);break;
+                    case 4:queenLogic(i,j,true,false);break;
+                    case 5:kingLogic(i,j,true,false);break;
                 }
             }
         }
@@ -475,18 +527,21 @@ function checkForGameOver(){
     }
 }
 function gameOver(type){
-    let gameOverBody = document.querySelector(".gameOverBody");
+    let gameOverBody = document.querySelector(".game-over-body");
     switch(type){
         default:break;
         case 0:gameOverBody.innerHTML = "Game Over<br>White Wins";break;
         case 1:gameOverBody.innerHTML = "Game Over<br>Black Wins";break;
         case 2:gameOverBody.innerHTML = "Stalemate";break;
     }
-    document.querySelector(".gameOverMask").style.display = "block";
+    document.querySelector(".game-over-mask").style.display = "block";
 }
 
 /*--Game Piece Logic-------------------------------------------------------------------------------------------------------------------------------*/
-function pawnLogic(i,j,test){
+function pawnLogic(i,j,test,compDepth){
+    let possible = null;
+    if(compDepth) possible = [];
+
     let newJ1,newJ2,firstJ,opTurn;
     if(game.turn === 0){
         newJ1 = j-1;
@@ -502,12 +557,18 @@ function pawnLogic(i,j,test){
     }
     if(newJ1 >= 0 && newJ1 <= 7 && !game.boardPiece[i][newJ1]){
         if(checkForCheck(i,newJ1) === -1){
-            if(!test) game.boardMarks[i][newJ1] = 2;
-            else game.possibleMoves++;
+            if(compDepth) possible.push({x:i,y:newJ1,initX:i,initY:j});
+            else {
+                if(!test) game.boardMarks[i][newJ1] = 2;
+                else game.possibleMoves++;
+            }
         }
         if(newJ2 >= 0 && !game.boardPiece[i][newJ2] && j === firstJ && checkForCheck(i,newJ2) === -1){
-            if(!test) game.boardMarks[i][newJ2] = 2;
-            else game.possibleMoves++;
+            if(compDepth) possible.push({x:i,y:newJ2,initX:i,initY:j});
+            else{
+                if(!test) game.boardMarks[i][newJ2] = 2;
+                else game.possibleMoves++;
+            }
         }
     }
     
@@ -515,39 +576,55 @@ function pawnLogic(i,j,test){
     let newX2 = i+1;
     if(checkForCheck(newX1,newJ1) === -1){
         if(newJ1 >= 0 && newX1 >= 0 && game.boardPiece[newX1][newJ1] && game.boardPiece[newX1][newJ1].turn === opTurn){
-            if(!test) game.boardMarks[newX1][newJ1] = 3;
-            else game.possibleMoves++;
+            if(compDepth) possible.push({x:newX1,y:newJ1,initX:i,initY:j});
+            else{
+                if(!test) game.boardMarks[newX1][newJ1] = 3;
+                else game.possibleMoves++;
+            }
         }
     }
     if(checkForCheck(newX2,newJ1) === -1){
         if(newJ1 >= 0 && newX2 <= 7 && game.boardPiece[newX2][newJ1] && game.boardPiece[newX2][newJ1].turn === opTurn){
-            if(!test) game.boardMarks[newX2][newJ1] = 3;
-            else game.possibleMoves++;
+            if(compDepth) possible.push({x:newX2,y:newJ1,initX:i,initY:j});
+            else{
+                if(!test) game.boardMarks[newX2][newJ1] = 3;
+                else game.possibleMoves++;
+            }
         }
     }
 
     if(game.selectedPiece && game.selectedPiece.enPassant > -1){
         if(game.selectedPiece.enPassant === 0){
             if(!game.boardPiece[newX1][newJ1] && checkForCheck(newX1,newJ1) === -1){
-                if(test) game.possibleMoves++;
+                if(compDepth) possible.push({x:newX1,y:newJ1,initX:i,initY:j});
                 else{
-                    game.boardMarks[newX1][newJ1] = 2;
-                    game.enPassant = [newX1,j];
+                    if(test) game.possibleMoves++;
+                    else{
+                        game.boardMarks[newX1][newJ1] = 2;
+                        game.enPassant = [newX1,j];
+                    }
                 }
             }
         }
         else{
             if(!game.boardPiece[newX2][newJ1] && checkForCheck(newX2,newJ1) === -1){
-                if(test) game.possibleMoves++;
+                if(compDepth) possible.push({x:newX2,y:newJ1,initX:i,initY:j});
                 else{
-                    game.boardMarks[newX2][newJ1] = 2;
-                    game.enPassant = [newX2,j];
-                }  
+                    if(test) game.possibleMoves++;
+                    else{
+                        game.boardMarks[newX2][newJ1] = 2;
+                        game.enPassant = [newX2,j];
+                    }  
+                }
             }
         }
     }
+    return possible;
 }
-function rookLogic(i,j,test){
+function rookLogic(i,j,test,compDepth){
+    let possible = null;
+    if(compDepth) possible = [];
+
     let y1Index = j;
     while(1){
         y1Index--;
@@ -555,14 +632,20 @@ function rookLogic(i,j,test){
         if(game.boardPiece[i][y1Index]){
             if(game.boardPiece[i][y1Index].turn === game.turn) break;
             else if(checkForCheck(i,y1Index) === -1){
-                if(test) game.possibleMoves++;
-                else game.boardMarks[i][y1Index] = 3;
+                if(compDepth) possible.push({x:i,y:y1Index,initX:i,initY:j});
+                else{
+                    if(test) game.possibleMoves++;
+                    else game.boardMarks[i][y1Index] = 3;
+                }
                 break;
             }
         }
         if(checkForCheck(i,y1Index) === -1){
-            if(test) game.possibleMoves++;
-            else game.boardMarks[i][y1Index] = 2;
+            if(compDepth) possible.push({x:i,y:y1Index,initX:i,initY:j});
+            else{
+                if(test) game.possibleMoves++;
+                else game.boardMarks[i][y1Index] = 2;
+            }
         }
     }
     let y2Index = j;
@@ -572,14 +655,20 @@ function rookLogic(i,j,test){
         if(game.boardPiece[i][y2Index]){
             if(game.boardPiece[i][y2Index].turn === game.turn) break;
             else if(checkForCheck(i,y2Index) === -1){
-                if(test) game.possibleMoves++;
-                else game.boardMarks[i][y2Index] = 3;
+                if(compDepth) possible.push({x:i,y:y2Index,initX:i,initY:j});
+                else{
+                    if(test) game.possibleMoves++;
+                    else game.boardMarks[i][y2Index] = 3;
+                }
                 break;
             }
         }
         if(checkForCheck(i,y2Index) === -1){
-            if(test) game.possibleMoves++;
-            else game.boardMarks[i][y2Index] = 2;
+            if(compDepth) possible.push({x:i,y:y2Index,initX:i,initY:j});
+            else{
+                if(test) game.possibleMoves++;
+                else game.boardMarks[i][y2Index] = 2;
+            }
         }
     }
     let x1Index = i;
@@ -589,14 +678,20 @@ function rookLogic(i,j,test){
         if(game.boardPiece[x1Index][j]){
             if(game.boardPiece[x1Index][j].turn === game.turn) break;
             else if(checkForCheck(x1Index,j) === -1){
-                if(test) game.possibleMoves++;
-                else game.boardMarks[x1Index][j] = 3;
+                if(compDepth) possible.push({x:x1Index,y:j,initX:i,initY:j});
+                else{
+                    if(test) game.possibleMoves++;
+                    else game.boardMarks[x1Index][j] = 3;
+                }
                 break;
             }
         }
         if(checkForCheck(x1Index,j) === -1){
-            if(test) game.possibleMoves++;
-            else game.boardMarks[x1Index][j] = 2;
+            if(compDepth) possible.push({x:x1Index,y:j,initX:i,initY:j});
+            else{
+                if(test) game.possibleMoves++;
+                else game.boardMarks[x1Index][j] = 2;
+            }
         }
     }
     let x2Index = i;
@@ -606,18 +701,28 @@ function rookLogic(i,j,test){
         if(game.boardPiece[x2Index][j]){
             if(game.boardPiece[x2Index][j].turn === game.turn) break;
             else if(checkForCheck(x2Index,j) === -1){
-                if(test) game.possibleMoves++;
-                else game.boardMarks[x2Index][j] = 3;
+                if(compDepth) possible.push({x:x2Index,y:j,initX:i,initY:j});
+                else{
+                    if(test) game.possibleMoves++;
+                    else game.boardMarks[x2Index][j] = 3;
+                }
                 break;
             }
         }
         if(checkForCheck(x2Index,j) === -1){
-            if(test) game.possibleMoves++;
-            else game.boardMarks[x2Index][j] = 2;
+            if(compDepth) possible.push({x:x2Index,y:j,initX:i,initY:j});
+            else{
+                if(test) game.possibleMoves++;
+                else game.boardMarks[x2Index][j] = 2;
+            }
         }
     }
+    return possible;
 }
-function knightLogic(i,j,test){
+function knightLogic(i,j,test,compDepth){
+    let possible = null;
+    if(compDepth) possible = [];
+
     let indexX1 = i - 2, indexX2 = i + 2;
     let indexY1 = j - 2, indexY2 = j + 2;
     for(let m = indexX1; m <= indexX2; m++){
@@ -627,32 +732,48 @@ function knightLogic(i,j,test){
                 if((m === indexX1 || m === indexX2) && n != game.selectedCoords[1] && n != indexY1 && n != indexY2){
                     if(m >= 0 && m <= 7 && n >= 0 && n <= 7 && checkForCheck(m,n) === -1){
                         if(game.boardPiece[m][n] && game.boardPiece[m][n].turn != game.turn){
-                            if(test) game.possibleMoves++;
-                            else game.boardMarks[m][n] = 3;
+                            if(compDepth) possible.push({x:m,y:n,initX:i,initY:j});
+                            else{
+                                if(test) game.possibleMoves++;
+                                else game.boardMarks[m][n] = 3;
+                            }
                         }
                         else if(!game.boardPiece[m][n]){
-                            if(test) game.possibleMoves++;
-                            else game.boardMarks[m][n] = 2;
+                            if(compDepth) possible.push({x:m,y:n,initX:i,initY:j});
+                            else{
+                                if(test) game.possibleMoves++;
+                                else game.boardMarks[m][n] = 2;
+                            }
                         }
                     }
                 }
                 if((n === indexY1 || n === indexY2) && m != game.selectedCoords[0] && m != indexX1 && m != indexX2){
                     if(m >= 0 && m <= 7 && n >= 0 && n <= 7 && checkForCheck(m,n) === -1){
                         if(game.boardPiece[m][n] && game.boardPiece[m][n].turn != game.turn){
-                            if(test) game.possibleMoves++;
-                            else game.boardMarks[m][n] = 3;
+                            if(compDepth) possible.push({x:m,y:n,initX:i,initY:j});
+                            else{
+                                if(test) game.possibleMoves++;
+                                else game.boardMarks[m][n] = 3;
+                            }
                         }
                         else if(!game.boardPiece[m][n]){
-                            if(test) game.possibleMoves++;
-                            else game.boardMarks[m][n] = 2;
+                            if(compDepth) possible.push({x:m,y:n,initX:i,initY:j});
+                            else{
+                                if(test) game.possibleMoves++;
+                                else game.boardMarks[m][n] = 2;
+                            }
                         }
                     }
                 }
             }
         }
-    } 
+    }
+    return possible;
 }
-function bishopLogic(i,j,test){
+function bishopLogic(i,j,test,compDepth){
+    let possible = null;
+    if(compDepth) possible = [];
+
     let xD1 = i, yD1 = j;
     while(1){
         xD1--;
@@ -661,14 +782,20 @@ function bishopLogic(i,j,test){
         if(game.boardPiece[xD1][yD1]){
             if(game.boardPiece[xD1][yD1].turn === game.turn) break;
             else if(checkForCheck(xD1,yD1) === -1){
-                if(test) game.possibleMoves++;
-                else game.boardMarks[xD1][yD1] = 3;
+                if(compDepth) possible.push({x:xD1,y:yD1,initX:i,initY:j});
+                else{
+                    if(test) game.possibleMoves++;
+                    else game.boardMarks[xD1][yD1] = 3;
+                }
                 break;
             }
         }
         if(checkForCheck(xD1,yD1) === -1){
-            if(test) game.possibleMoves++;
-            else game.boardMarks[xD1][yD1] = 2;
+            if(compDepth) possible.push({x:xD1,y:yD1,initX:i,initY:j});
+            else{
+                if(test) game.possibleMoves++;
+                else game.boardMarks[xD1][yD1] = 2;
+            }
         }
     }
     let xD2 = i, yD2 = j;
@@ -679,14 +806,20 @@ function bishopLogic(i,j,test){
         if(game.boardPiece[xD2][yD2]){
             if(game.boardPiece[xD2][yD2].turn === game.turn) break;
             else if(checkForCheck(xD2,yD2) === -1){
-                if(test) game.possibleMoves++;
-                else game.boardMarks[xD2][yD2] = 3;
+                if(compDepth) possible.push({x:xD2,y:yD2,initX:i,initY:j});
+                else{
+                    if(test) game.possibleMoves++;
+                    else game.boardMarks[xD2][yD2] = 3;
+                }
                 break;
             }
         }
         if(checkForCheck(xD2,yD2) === -1){
-            if(test) game.possibleMoves++;
-            else game.boardMarks[xD2][yD2] = 2;
+            if(compDepth) possible.push({x:xD2,y:yD2,initX:i,initY:j});
+            else{
+                if(test) game.possibleMoves++;
+                else game.boardMarks[xD2][yD2] = 2;
+            }
         }
     }
     let xD3 = i, yD3 = j;
@@ -697,14 +830,20 @@ function bishopLogic(i,j,test){
         if(game.boardPiece[xD3][yD3]){
             if(game.boardPiece[xD3][yD3].turn === game.turn) break;
             else if(checkForCheck(xD3,yD3) === -1){
-                if(test) game.possibleMoves++;
-                else game.boardMarks[xD3][yD3] = 3;
+                if(compDepth) possible.push({x:xD3,y:yD3,initX:i,initY:j});
+                else{
+                    if(test) game.possibleMoves++;
+                    else game.boardMarks[xD3][yD3] = 3;
+                }
                 break;
             }
         }
         if(checkForCheck(xD3,yD3) === -1){
-            if(test) game.possibleMoves++;
-            else game.boardMarks[xD3][yD3] = 2;
+            if(compDepth) possible.push({x:xD3,y:yD3,initX:i,initY:j});
+            else{
+                if(test) game.possibleMoves++;
+                else game.boardMarks[xD3][yD3] = 2;
+            }
         }
     }
     let xD4 = i, yD4 = j;
@@ -715,22 +854,32 @@ function bishopLogic(i,j,test){
         if(game.boardPiece[xD4][yD4]){
             if(game.boardPiece[xD4][yD4].turn === game.turn) break;
             else if(checkForCheck(xD4,yD4) === -1){
-                if(test) game.possibleMoves++;
-                else game.boardMarks[xD4][yD4] = 3;
+                if(compDepth) possible.push({x:xD4,y:yD4,initX:i,initY:j});
+                else{
+                    if(test) game.possibleMoves++;
+                    else game.boardMarks[xD4][yD4] = 3;
+                }
                 break;
             }
         }
         if(checkForCheck(xD4,yD4) === -1){
-            if(test) game.possibleMoves++;
-            else game.boardMarks[xD4][yD4] = 2;
+            if(compDepth) possible.push({x:xD4,y:yD4,initX:i,initY:j});
+            else{
+                if(test) game.possibleMoves++;
+                else game.boardMarks[xD4][yD4] = 2;
+            }
         }
     }
+    return possible;
 }
-function queenLogic(i,j,test){
-    bishopLogic(i,j,test);
-    rookLogic(i,j,test);
+function queenLogic(i,j,test,compDepth){
+    bishopLogic(i,j,test,compDepth);
+    rookLogic(i,j,test,compDepth);
 }
-function kingLogic(i,j,test){
+function kingLogic(i,j,test,compDepth){
+    let possible = null;
+    if(compDepth) possible = [];
+
     let startI = i - 1, endI = i + 1;
     let startJ = j - 1, endJ = j + 1;
     for(let m = startI; m <= endI; m++){
@@ -738,12 +887,18 @@ function kingLogic(i,j,test){
             if(m >= 0 && m <= 7 && n >= 0 && n <= 7){
                 if(checkForCheck(m,n) === -1){
                     if(!game.boardPiece[m][n]){
-                        if(test) game.possibleMoves++;
-                        else game.boardMarks[m][n] = 2;
+                        if(compDepth) possible.push({x:m,y:n,initX:i,initY:j});
+                        else{
+                            if(test) game.possibleMoves++;
+                            else game.boardMarks[m][n] = 2;
+                        }
                     }
                     else if(game.boardPiece[m][n].turn != game.turn){
-                        if(test) game.possibleMoves++;
-                        else game.boardMarks[m][n] = 3;
+                        if(compDepth) possible.push({x:m,y:n,initX:i,initY:j});
+                        else{
+                            if(test) game.possibleMoves++;
+                            else game.boardMarks[m][n] = 3;
+                        }
                     }
                 }
             }
@@ -759,8 +914,11 @@ function kingLogic(i,j,test){
                 else{
                     if(game.boardPiece[leftX][j].alreadyMoved) break;
                     else{
-                        if(test) game.possibleMoves++;
-                        else game.boardMarks[i-2][j] = 2;
+                        if(compDepth) possible.push({x:i-2,y:j,initX:i,initY:j});
+                        else{
+                            if(test) game.possibleMoves++;
+                            else game.boardMarks[i-2][j] = 2;
+                        }
                     }
                 }
             }
@@ -774,11 +932,174 @@ function kingLogic(i,j,test){
                 else{
                     if(game.boardPiece[rightX][j].alreadyMoved) break;
                     else{
-                        if(test) game.possibleMoves++;
-                        else game.boardMarks[i+2][j] = 2;
+                        if(compDepth) possible.push({x:i+2,y:j,initX:i,initY:j});
+                        else{
+                            if(test) game.possibleMoves++;
+                            else game.boardMarks[i+2][j] = 2;
+                        }
                     }
                 }
             }
         }
     }
+}
+
+/*--Computer AI------------------------------------------------------------------------------------------------------------------------------------*/
+function computerTurn(){
+    let computerMask = document.querySelector(".computer-mask");
+    computerMask.style.display = "block";
+
+    setTimeout(()=>{
+        let possible = [];
+        game.possibleMoves = 0;
+        for(let i = 0; i < 8; i++){
+            for(let j = 0; j < 8; j++){
+                if(game.boardPiece[i][j] && game.boardPiece[i][j].turn === game.turn){
+                    game.selectedPiece = game.boardPiece[i][j];
+                    game.selectedCoords = [i,j];
+                    switch(game.boardPiece[i][j].type){
+                        default:break;
+                        case 0:possible = possible.concat(pawnLogic(i,j,false,true));break;
+                        case 1:possible = possible.concat(rookLogic(i,j,false,true));break;
+                        case 2:possible = possible.concat(knightLogic(i,j,false,true));break;
+                        case 3:possible = possible.concat(bishopLogic(i,j,false,true));break;
+                        case 4:possible = possible.concat(queenLogic(i,j,false,true));break;
+                        case 5:possible = possible.concat(kingLogic(i,j,false,true));break;
+                    }
+                }
+            }
+        }
+        let allEvals = [];
+        let compTurn = game.turn;
+        for(let i = 0; i < possible.length; i++){
+            if(possible[i]){
+                let backUpBoard = JSON.parse(JSON.stringify(game.boardPiece));
+                for(let i = 0; i < 8; i++){
+                    for(let j = 0; j < 8; j++){
+                        if(backUpBoard[i][j]) backUpBoard[i][j].img = game.boardPiece[i][j].img;
+                    }
+                }
+                gameClick({offsetX:0,offsetY:0},possible[i].initX,possible[i].initY,true);
+                gameClick({offsetX:0,offsetY:0},possible[i].x,possible[i].y,true);
+                let eval = evaluateBoard();
+                allEvals.push({move:possible[i],diff:eval[1]-eval[0]});
+                game.boardPiece = backUpBoard;
+                game.turn = compTurn;
+            }
+        }
+    
+        allEvals.sort((a,b)=>{return b.diff - a.diff});
+        let currMove = allEvals[0];
+        gameClick({offsetX:0,offsetY:0},currMove.move.initX,currMove.move.initY,true);
+        gameClick({offsetX:0,offsetY:0},currMove.move.x,currMove.move.y,true);
+        computerMask.style.display = "none";
+        drawBoard();
+    },200);
+}
+function evaluateBoard(){
+    let whiteWeight = 0, blackWeight = 0;
+    let pieceWeights = [100,479,280,320,929,60000];
+    let boardWeightWhite = {
+        p:[
+            [ 100, 100, 100, 100, 105, 100, 100,  100],
+            [  78,  83,  86,  73, 102,  82,  85,  90],
+            [   7,  29,  21,  44,  40,  31,  44,   7],
+            [ -17,  16,  -2,  15,  14,   0,  15, -13],
+            [ -26,   3,  10,   9,   6,   1,   0, -23],
+            [ -22,   9,   5, -11, -10,  -2,   3, -19],
+            [ -31,   8,  -7, -37, -36, -14,   3, -31],
+            [   0,   0,   0,   0,   0,   0,   0,   0]
+        ],
+        n:[
+            [-66, -53, -75, -75, -10, -55, -58, -70],
+            [ -3,  -6, 100, -36,   4,  62,  -4, -14],
+            [ 10,  67,   1,  74,  73,  27,  62,  -2],
+            [ 24,  24,  45,  37,  33,  41,  25,  17],
+            [ -1,   5,  31,  21,  22,  35,   2,   0],
+            [-18,  10,  13,  22,  18,  15,  11, -14],
+            [-23, -15,   2,   0,   2,   0, -23, -20],
+            [-74, -23, -26, -24, -19, -35, -22, -69]
+        ],
+        b:[
+            [-59, -78, -82, -76, -23,-107, -37, -50],
+            [-11,  20,  35, -42, -39,  31,   2, -22],
+            [ -9,  39, -32,  41,  52, -10,  28, -14],
+            [ 25,  17,  20,  34,  26,  25,  15,  10],
+            [ 13,  10,  17,  23,  17,  16,   0,   7],
+            [ 14,  25,  24,  15,   8,  25,  20,  15],
+            [ 19,  20,  11,   6,   7,   6,  20,  16],
+            [ -7,   2, -15, -12, -14, -15, -10, -10]
+        ],
+        r:[
+            [ 35,  29,  33,   4,  37,  33,  56,  50],
+            [ 55,  29,  56,  67,  55,  62,  34,  60],
+            [ 19,  35,  28,  33,  45,  27,  25,  15],
+            [  0,   5,  16,  13,  18,  -4,  -9,  -6],
+            [-28, -35, -16, -21, -13, -29, -46, -30],
+            [-42, -28, -42, -25, -25, -35, -26, -46],
+            [-53, -38, -31, -26, -29, -43, -44, -53],
+            [-30, -24, -18,   5,  -2, -18, -31, -32]
+        ],
+        q:[
+            [  6,   1,  -8,-104,  69,  24,  88,  26],
+            [ 14,  32,  60, -10,  20,  76,  57,  24],
+            [ -2,  43,  32,  60,  72,  63,  43,   2],
+            [  1, -16,  22,  17,  25,  20, -13,  -6],
+            [-14, -15,  -2,  -5,  -1, -10, -20, -22],
+            [-30,  -6, -13, -11, -16, -11, -16, -27],
+            [-36, -18,   0, -19, -15, -15, -21, -38],
+            [-39, -30, -31, -13, -31, -36, -34, -42]
+        ],
+        k:[
+            [  4,  54,  47, -99, -99,  60,  83, -62],
+            [-32,  10,  55,  56,  56,  55,  10,   3],
+            [-62,  12, -57,  44, -67,  28,  37, -31],
+            [-55,  50,  11,  -4, -19,  13,   0, -49],
+            [-55, -43, -52, -28, -51, -47,  -8, -50],
+            [-47, -42, -43, -79, -64, -32, -29, -32],
+            [ -4,   3, -14, -50, -57, -18,  13,   4],
+            [ 17,  30,  -3, -14,   6,  -1,  40,  18]
+        ]
+    }
+    let boardWeightBlack = {
+        p: boardWeightWhite.p.slice().reverse(),
+        n: boardWeightWhite.n.slice().reverse(),
+        b: boardWeightWhite.b.slice().reverse(),
+        r: boardWeightWhite.r.slice().reverse(),
+        q: boardWeightWhite.q.slice().reverse(),
+        k: boardWeightWhite.k.slice().reverse()
+    }
+
+    for(let i = 0; i < 8; i++){
+        for(let j = 0; j < 8; j++){
+            if(game.boardPiece[i][j]){
+                if(game.boardPiece[i][j].turn === 0){
+                    switch(game.boardPiece[i][j].type){
+                        default:break;
+                        case 0:whiteWeight += boardWeightWhite.p[i][j] + pieceWeights[0];break;
+                        case 1:whiteWeight += boardWeightWhite.r[i][j] + pieceWeights[1];break;
+                        case 2:whiteWeight += boardWeightWhite.n[i][j] + pieceWeights[2];break;
+                        case 3:whiteWeight += boardWeightWhite.b[i][j] + pieceWeights[3];break;
+                        case 4:whiteWeight += boardWeightWhite.q[i][j] + pieceWeights[4];break;
+                        case 5:whiteWeight += boardWeightWhite.k[i][j] + pieceWeights[5];break;
+                    }
+                }
+                else{
+                    switch(game.boardPiece[i][j].type){
+                        default:break;
+                        case 0:blackWeight += boardWeightBlack.p[i][j] + pieceWeights[0];break;
+                        case 1:blackWeight += boardWeightBlack.r[i][j] + pieceWeights[1];break;
+                        case 2:blackWeight += boardWeightBlack.n[i][j] + pieceWeights[2];break;
+                        case 3:blackWeight += boardWeightBlack.b[i][j] + pieceWeights[3];break;
+                        case 4:blackWeight += boardWeightBlack.q[i][j] + pieceWeights[4];break;
+                        case 5:blackWeight += boardWeightBlack.k[i][j] + pieceWeights[5];break;
+                    }
+                }
+            }
+        }
+    }
+    return [whiteWeight,blackWeight];
+}
+
+
 }
