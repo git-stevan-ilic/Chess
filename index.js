@@ -12,13 +12,13 @@ function initLoad(){
     resize();
 
     game.mode = 1;
-    game.difficulty = 1;
+    game.difficulty = 0;
 
     document.querySelector("#game-canvas").onclick = gameClick;
     document.querySelector("#change-mode").onclick = changeGameMode;
-    document.querySelector("#diff-e").onclick = ()=>{changeDifficulty(1)}
-    document.querySelector("#diff-m").onclick = ()=>{changeDifficulty(2)}
-    document.querySelector("#diff-h").onclick = ()=>{changeDifficulty(3)}
+    document.querySelector("#diff-e").onclick = ()=>{changeDifficulty(0)}
+    document.querySelector("#diff-m").onclick = ()=>{changeDifficulty(1)}
+    document.querySelector("#diff-h").onclick = ()=>{changeDifficulty(2)}
 }
 function resize(){
     let computerMask = document.querySelector(".computer-mask");
@@ -64,9 +64,9 @@ function changeDifficulty(diff){
         prevSelected.className = "button diff-button";
         switch(diff){
             default:break;
-            case 1:document.querySelector("#diff-e").className = "button diff-button selected";break;
-            case 2:document.querySelector("#diff-m").className = "button diff-button selected";break;
-            case 3:document.querySelector("#diff-h").className = "button diff-button selected";break;
+            case 0:document.querySelector("#diff-e").className = "button diff-button selected";break;
+            case 1:document.querySelector("#diff-m").className = "button diff-button selected";break;
+            case 2:document.querySelector("#diff-h").className = "button diff-button selected";break;
         }
         resetBoard();
     }
@@ -313,7 +313,7 @@ function gameClick(e,givenX,givenY,compInit){
                 if(game.turn === 0) game.turn = 1;
                 else game.turn = 0;
                 demarkBoard();
-                if(!compInit) checkForGameOver();
+                checkForGameOver();
                 if(game.mode === 1 && !compInit) computerTurn();
             }        
         }
@@ -344,7 +344,7 @@ function markBoard(i,j,type){
 function checkForCheck(i,j){
     if(i <= 7 && i >= 0 && j <= 7 && j >= 0){
         let tempBoard = JSON.parse(JSON.stringify(game.boardPiece));
-        if(i != undefined && j != undefined && game.selectedPiece){
+        if(i && j && game.selectedPiece){
             tempBoard[i][j] = game.selectedPiece;
             tempBoard[game.selectedCoords[0]][game.selectedCoords[1]] = null;
         }
@@ -357,7 +357,7 @@ function checkForCheck(i,j){
             kingX = game.blackKingCoords[0];
             kingY = game.blackKingCoords[1];
         }
-        if(i != undefined  && j != undefined  && game.selectedPiece && game.selectedPiece.type === 5){
+        if(i && j && game.selectedPiece && game.selectedPiece.type === 5){
             kingX = i
             kingY = j
         }
@@ -873,9 +873,8 @@ function bishopLogic(i,j,test,compDepth){
     return possible;
 }
 function queenLogic(i,j,test,compDepth){
-    let possible1 = bishopLogic(i,j,test,compDepth);
-    let possible2 = rookLogic(i,j,test,compDepth);
-    if(compDepth) return possible1.concat(possible2);
+    bishopLogic(i,j,test,compDepth);
+    rookLogic(i,j,test,compDepth);
 }
 function kingLogic(i,j,test,compDepth){
     let possible = null;
@@ -943,7 +942,6 @@ function kingLogic(i,j,test,compDepth){
             }
         }
     }
-    return possible;
 }
 
 /*--Computer AI------------------------------------------------------------------------------------------------------------------------------------*/
@@ -952,115 +950,51 @@ function computerTurn(){
     computerMask.style.display = "block";
 
     setTimeout(()=>{
-        let evalFilter = [];
+        let possible = [];
         game.possibleMoves = 0;
-        let possibleDepth0 = calculatePossible();
-        let allEvals = [], compTurn0 = game.turn;
-        for(let i = 0; i < possibleDepth0.length; i++){
-            if(possibleDepth0[i]){
-                let backUpBoard0 = copyBoard();
-                let whiteKingBackup0 = JSON.parse(JSON.stringify(game.whiteKingCoords));
-                let blackKingBackup0 = JSON.parse(JSON.stringify(game.blackKingCoords));
-                gameClick({offsetX:0,offsetY:0},possibleDepth0[i].initX,possibleDepth0[i].initY,true);
-                gameClick({offsetX:0,offsetY:0},possibleDepth0[i].x,possibleDepth0[i].y,true);
-
-                game.possibleMoves = 0;
-                let compTurn1 = game.turn;
-                let possibleDepth1 = calculatePossible();
-                for(let j = 0; j < possibleDepth1.length; j++){
-                    if(possibleDepth1[j]){
-                        let backUpBoard1 = copyBoard();
-                        let whiteKingBackup1 = JSON.parse(JSON.stringify(game.whiteKingCoords));
-                        let blackKingBackup1 = JSON.parse(JSON.stringify(game.blackKingCoords));
-                        gameClick({offsetX:0,offsetY:0},possibleDepth1[j].initX,possibleDepth1[j].initY,true);
-                        gameClick({offsetX:0,offsetY:0},possibleDepth1[j].x,possibleDepth1[j].y,true);
-
-                        let eval = evaluateBoard();
-                        let currEvalScore = eval[1]-eval[0];
-                        evalFilter.push(currEvalScore);
-                        evalFilter.sort((a,b)=>{return b-a});
-                        while(evalFilter.length > 500) evalFilter.pop();
-                        if(currEvalScore >= evalFilter[evalFilter.length-1]){
-                            if(game.difficulty === 1) allEvals.push({moves:[possibleDepth0[i],possibleDepth1[j]],diff:eval[1]-eval[0]});
-                            else{
-                                // Difficulty 2
-                                game.possibleMoves = 0;
-                                let compTurn2 = game.turn;
-                                let possibleDepth2 = calculatePossible();
-                                for(let k = 0; k < possibleDepth2.length; k++){
-                                    if(possibleDepth2[k]){
-                                        let backUpBoard2 = copyBoard();
-                                        let whiteKingBackup2 = JSON.parse(JSON.stringify(game.whiteKingCoords));
-                                        let blackKingBackup2 = JSON.parse(JSON.stringify(game.blackKingCoords));
-                                        gameClick({offsetX:0,offsetY:0},possibleDepth2[k].initX,possibleDepth2[k].initY,true);
-                                        gameClick({offsetX:0,offsetY:0},possibleDepth2[k].x,possibleDepth2[k].y,true);
-    
-                                        let eval = evaluateBoard();
-                                        let currEvalScore = eval[1]-eval[0];
-                                        evalFilter.push(currEvalScore);
-                                        evalFilter.sort((a,b)=>{return b-a});
-                                        while(evalFilter.length > 500) evalFilter.pop();
-                                        if(currEvalScore >= evalFilter[evalFilter.length-1]){
-                                            if(game.difficulty === 2) allEvals.push({moves:[possibleDepth0[i],possibleDepth1[j],possibleDepth2[k]],diff:eval[1]-eval[0]});
-                                            else{
-                                                // Difficulty 3
-                                                game.possibleMoves = 0;
-                                                let compTurn3 = game.turn;
-                                                let possibleDepth3 = calculatePossible();
-                                                for(let l = 0; l < possibleDepth3.length; l++){
-                                                    if(possibleDepth3[k]){
-                                                        let backUpBoard3 = copyBoard();
-                                                        let whiteKingBackup3 = JSON.parse(JSON.stringify(game.whiteKingCoords));
-                                                        let blackKingBackup3 = JSON.parse(JSON.stringify(game.blackKingCoords));
-                                                        gameClick({offsetX:0,offsetY:0},possibleDepth3[l].initX,possibleDepth3[l].initY,true);
-                                                        gameClick({offsetX:0,offsetY:0},possibleDepth3[l].x,possibleDepth3[k].y,true);
-                                                        
-                                                        let eval = evaluateBoard();
-                                                        let currEvalScore = eval[1]-eval[0];
-                                                        evalFilter.push(currEvalScore);
-                                                        evalFilter.sort((a,b)=>{return b-a});
-                                                        while(evalFilter.length > 500) evalFilter.pop();
-        
-                                                        if(game.difficulty === 3) allEvals.push({moves:[possibleDepth0[i],possibleDepth1[j],possibleDepth2[k],possibleDepth3[l]],diff:eval[1]-eval[0]});
-                                                        game.whiteKingCoords = whiteKingBackup3;
-                                                        game.blackKingCoords = blackKingBackup3;
-                                                        game.boardPiece = backUpBoard3;
-                                                        game.turn = compTurn3;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        game.whiteKingCoords = whiteKingBackup2;
-                                        game.blackKingCoords = blackKingBackup2;
-                                        game.boardPiece = backUpBoard2;
-                                        game.turn = compTurn2;
-                                    }
-                                }
-                            }
-                        }
-                        game.whiteKingCoords = whiteKingBackup1;
-                        game.blackKingCoords = blackKingBackup1;
-                        game.boardPiece = backUpBoard1;
-                        game.turn = compTurn1;
+        for(let i = 0; i < 8; i++){
+            for(let j = 0; j < 8; j++){
+                if(game.boardPiece[i][j] && game.boardPiece[i][j].turn === game.turn){
+                    game.selectedPiece = game.boardPiece[i][j];
+                    game.selectedCoords = [i,j];
+                    switch(game.boardPiece[i][j].type){
+                        default:break;
+                        case 0:possible = possible.concat(pawnLogic(i,j,false,true));break;
+                        case 1:possible = possible.concat(rookLogic(i,j,false,true));break;
+                        case 2:possible = possible.concat(knightLogic(i,j,false,true));break;
+                        case 3:possible = possible.concat(bishopLogic(i,j,false,true));break;
+                        case 4:possible = possible.concat(queenLogic(i,j,false,true));break;
+                        case 5:possible = possible.concat(kingLogic(i,j,false,true));break;
                     }
                 }
-                game.whiteKingCoords = whiteKingBackup0;
-                game.blackKingCoords = blackKingBackup0;
-                game.boardPiece = backUpBoard0;
-                game.turn = compTurn0;
             }
         }
-        console.log();
-        console.log(allEvals);
-        if(allEvals.length > 0){
-            allEvals.sort((a,b)=>{return b.diff - a.diff});
-            console.log(allEvals[0]);
-            gameClick({offsetX:0,offsetY:0},allEvals[0].moves[0].initX,allEvals[0].moves[0].initY,true);
-            gameClick({offsetX:0,offsetY:0},allEvals[0].moves[0].x,allEvals[0].moves[0].y,true);
+        let allEvals = [];
+        let compTurn = game.turn;
+        for(let i = 0; i < possible.length; i++){
+            if(possible[i]){
+                let backUpBoard = JSON.parse(JSON.stringify(game.boardPiece));
+                for(let i = 0; i < 8; i++){
+                    for(let j = 0; j < 8; j++){
+                        if(backUpBoard[i][j]) backUpBoard[i][j].img = game.boardPiece[i][j].img;
+                    }
+                }
+                gameClick({offsetX:0,offsetY:0},possible[i].initX,possible[i].initY,true);
+                gameClick({offsetX:0,offsetY:0},possible[i].x,possible[i].y,true);
+                let eval = evaluateBoard();
+                allEvals.push({move:possible[i],diff:eval[1]-eval[0]});
+                game.boardPiece = backUpBoard;
+                game.turn = compTurn;
+            }
         }
+    
+        allEvals.sort((a,b)=>{return b.diff - a.diff});
+        let currMove = allEvals[0];
+        gameClick({offsetX:0,offsetY:0},currMove.move.initX,currMove.move.initY,true);
+        gameClick({offsetX:0,offsetY:0},currMove.move.x,currMove.move.y,true);
         computerMask.style.display = "none";
         drawBoard();
-    },100);
+    },200);
 }
 function evaluateBoard(){
     let whiteWeight = 0, blackWeight = 0;
